@@ -85,7 +85,7 @@ public class PdfService {
                     fieldMetadataList.add(fieldMetadata);
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
 
