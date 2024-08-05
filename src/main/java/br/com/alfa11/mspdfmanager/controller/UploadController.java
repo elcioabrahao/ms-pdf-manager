@@ -1,6 +1,7 @@
 package br.com.alfa11.mspdfmanager.controller;
 
 import br.com.alfa11.mspdfmanager.service.ObjectStoreService;
+import br.com.alfa11.mspdfmanager.service.PdfService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +21,9 @@ public class UploadController {
     @Autowired
     ObjectStoreService objectStoreService;
 
+    @Autowired
+    PdfService pdfService;
+
     public static String UPLOAD_DIRECTORY = System.getProperty("user.dir") + "/uploads";
 
     @GetMapping("/uploadpdf")
@@ -35,6 +39,7 @@ public class UploadController {
         Files.write(fileNameAndPath, file.getBytes());
         model.addAttribute("msg", "Uploaded pdfs: " + fileNames.toString());
         objectStoreService.uploadFile("docs-"+grupo,file.getOriginalFilename(),file,"application/octet-stream");
+        pdfService.searchFields(fileNameAndPath);
         return "index";
     }
 }
