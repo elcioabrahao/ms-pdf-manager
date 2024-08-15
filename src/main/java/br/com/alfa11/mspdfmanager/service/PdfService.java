@@ -9,14 +9,22 @@ import com.itextpdf.forms.fields.PdfButtonFormField;
 import com.itextpdf.forms.fields.PdfFormField;
 import com.itextpdf.forms.fields.PdfTextFormField;
 import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,16 +35,6 @@ import java.util.Set;
 @Slf4j
 public class PdfService {
 
-//    public  void scanFields(String path) throws IOException {
-//        PdfReader pdfReader = new PdfReader(path);
-//        AcroFields acroFields = pdfReader.getAcroFields();
-//        HashMap<String,AcroFields.Item> fields = acroFields.getFields();
-//        Set<Map.Entry<String, Item>> entrySet = fields.entrySet();
-//        for (Map.Entry<String, Item> entry : entrySet) {
-//            String key = entry.getKey();
-//        }
-//    }
-
     public void searchFields(Path path) {
 
         PdfReader reader = null;
@@ -46,9 +44,7 @@ public class PdfService {
             log.error(e.getMessage());
         }
         PdfDocument pdfDoc = new PdfDocument(reader);
-// Get the fields from the reader (read-only!!!)
         PdfAcroForm form = PdfAcroForm.getAcroForm(pdfDoc, true);
-// Loop over the fields and get info about them
         Map<String, PdfFormField> fields = form.getAllFormFields();
 
         for (Map.Entry<String, PdfFormField> entry : fields.entrySet()) {
@@ -96,5 +92,49 @@ public class PdfService {
                 .grupo(grupo)
                 .url(url)
                 .build();
+    }
+
+    public byte[] mergeUsingPDFBox(List<String> pdfFiles, String outputFile)  {
+        PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
+        pdfMergerUtility.setDestinationFileName("/uploads/"+outputFile);
+        log.info("Arquivo: "+outputFile);
+
+        pdfFiles.forEach(file -> {
+            try {
+                pdfMergerUtility.addSource(new File("/uploads/"+file));
+                log.info("Arquivo: "+file);
+            } catch (FileNotFoundException e) {
+                log.error(e.getMessage());
+            }
+        });
+
+        File file = new File("/uploads/"+outputFile);
+        byte[] content;
+        try {
+            pdfMergerUtility.mergeDocuments(MemoryUsageSetting.setupTempFileOnly().streamCache);
+            content = Files.readAllBytes(file.toPath());
+            return content;
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+
+        return null;
+    }
+
+    public static void createPDFDoc(String content, String filePath) throws IOException {
+        PDDocument document = new PDDocument();
+        for (int i = 0; i < 3; i++) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.beginText();
+                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD),14);
+                contentStream.showText(content + ", page:" + i);
+                contentStream.endText();
+            }
+        }
+        document.save("uploads/" + filePath);
+        document.close();
     }
 }
