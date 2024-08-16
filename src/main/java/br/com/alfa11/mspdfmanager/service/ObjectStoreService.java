@@ -123,5 +123,45 @@ public class ObjectStoreService {
         }
     }
 
+    public String getDoc(String bucketName, String objectName){
+        try {
+            String destino = "edited_"+objectName;
+            minioClient.downloadObject(
+                    DownloadObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectName)
+                            .filename("uploads/"+destino)
+                            .build());
+            return destino;
+        } catch (ErrorResponseException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (InsufficientDataException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (InternalException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (InvalidKeyException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (InvalidResponseException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (IOException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (NoSuchAlgorithmException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (ServerException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        } catch (XmlParserException e) {
+            log.error(e.getLocalizedMessage());
+            return null;
+        }
+    }
+
 
 }

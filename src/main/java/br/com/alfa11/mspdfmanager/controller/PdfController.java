@@ -87,4 +87,24 @@ public class PdfController {
 
     }
 
+    @GetMapping("/stamp/{grupo}/{file}")
+    @Operation(summary = "Acrescenta campos com informações ao PDF",
+            description = "Permite que informações sejam adicionadas a um determinado PDF")
+    public ResponseEntity<?> stampPDF(@PathVariable String grupo, @PathVariable String file) {
+
+        byte[] contents = pdfService.manipulatePdf("docs-"+grupo,file,"edited.pdf");
+        if(contents != null){
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "edited.pdf";
+            headers.setContentDispositionFormData(filename, filename);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
+            return response;
+        }else{
+            return ResponseEntity.notFound().build();
+        }
+
+    }
+
 }
