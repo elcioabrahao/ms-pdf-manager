@@ -39,7 +39,7 @@ public class UploadController {
         Files.write(fileNameAndPath, file.getBytes());
         model.addAttribute("msg", "Uploaded pdfs: " + fileNames.toString());
         objectStoreService.uploadFile("docs-"+grupo,file.getOriginalFilename(),file,"application/octet-stream");
-        pdfService.searchFields(fileNameAndPath);
+//        pdfService.searchFields(fileNameAndPath);
         return "index";
     }
 }

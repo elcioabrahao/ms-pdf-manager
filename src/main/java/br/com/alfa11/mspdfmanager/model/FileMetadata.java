@@ -17,5 +17,4 @@ public class FileMetadata implements Serializable {
     private String grupo;
     private String dataExtracao;
     private String url;
-    private List<FieldMetadata> campos;
 }

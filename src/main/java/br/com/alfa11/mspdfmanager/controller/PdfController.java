@@ -55,7 +55,7 @@ public class PdfController {
             description = "Permite que um ou mais arquivos PDF sejam concatenados")
     public ResponseEntity<?> mergePDF(@RequestBody MergeFiles mergeFiles) {
 
-        byte[] contents = pdfService.mergeUsingPDFBox(mergeFiles.getFiles(),"result.pdf");
+        byte[] contents = pdfService.mergeUsingIText(mergeFiles.getFiles(),"result.pdf");
         log.info("Contents: "+contents.length);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
