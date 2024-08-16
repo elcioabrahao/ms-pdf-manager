@@ -59,12 +59,31 @@ public class PdfController {
         log.info("Contents: "+contents.length);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        // Here you have to set the actual filename of your pdf
         String filename = "result.pdf";
         headers.setContentDispositionFormData(filename, filename);
         headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
         ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
         return response;
+
+    }
+
+    @GetMapping("/download/{grupo}/{file}")
+    @Operation(summary = "Faz download de um arquivo PDF a partir do repositorio remoto",
+            description = "Permite que uma arquivo seja acessado a partir do repositório remoto")
+    public ResponseEntity<?> downloadPDF(@PathVariable String grupo, @PathVariable String file) {
+
+        byte[] contents = objectStoreService.downloadFile("docs-"+grupo,file);
+        if(contents != null){
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "result.pdf";
+            headers.setContentDispositionFormData(filename, filename);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
+            return response;
+        }else{
+            return ResponseEntity.notFound().build();
+        }
 
     }
 

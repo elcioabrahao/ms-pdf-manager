@@ -26,31 +26,6 @@ import com.itextpdf.text.Document;
 @Slf4j
 public class PdfService {
 
-//    public void searchFields(Path path) {
-//
-//        PdfReader reader = null;
-//        try {
-//            reader = new PdfReader(path.toFile());
-//        } catch (IOException e) {
-//            log.error(e.getMessage());
-//        }
-//        PdfDocument pdfDoc = new PdfDocument(reader);
-//        PdfAcroForm form = PdfAcroForm.getAcroForm(pdfDoc, true);
-//        Map<String, PdfFormField> fields = form.getAllFormFields();
-//
-//        for (Map.Entry<String, PdfFormField> entry : fields.entrySet()) {
-//            PdfFormField field = entry.getValue();
-//            if (field instanceof PdfButtonFormField) {
-//                log.info("Botão: "+entry.getKey());
-//            } else if (field instanceof PdfTextFormField) {
-//                log.info("Texto : "+entry.getKey());
-//                log.info("Valor : "+field.getValueAsString());
-//            }else{
-//                log.info("Field: "+entry.getKey());
-//            }
-//        }
-//
-//    }
 
     public FileMetadata getFileMetadata(MultipartFile file, String grupo, String url){
 
@@ -136,6 +111,7 @@ public class PdfService {
             File file = new File(outputFile);
             byte[] content;
             content = Files.readAllBytes(file.toPath());
+            Files.delete(file.toPath());
             return content;
         } catch (DocumentException e) {
             log.error(e.getMessage());
