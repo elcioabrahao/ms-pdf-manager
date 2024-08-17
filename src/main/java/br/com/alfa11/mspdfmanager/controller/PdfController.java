@@ -1,6 +1,7 @@
 package br.com.alfa11.mspdfmanager.controller;
 
 
+import br.com.alfa11.mspdfmanager.model.ComposedDocument;
 import br.com.alfa11.mspdfmanager.model.FileMetadata;
 import br.com.alfa11.mspdfmanager.model.MergeFiles;
 import br.com.alfa11.mspdfmanager.service.ObjectStoreService;
@@ -53,9 +54,9 @@ public class PdfController {
     @GetMapping("/merge")
     @Operation(summary = "Mescla arquivos PDF",
             description = "Permite que um ou mais arquivos PDF sejam concatenados")
-    public ResponseEntity<?> mergePDF(@RequestBody MergeFiles mergeFiles) {
+    public ResponseEntity<?> mergePDF(@RequestBody ComposedDocument composedDocument) {
 
-        byte[] contents = pdfService.mergeUsingIText(mergeFiles.getFiles(),"result.pdf");
+        byte[] contents = pdfService.mergeFiles(composedDocument);
         log.info("Contents: "+contents.length);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

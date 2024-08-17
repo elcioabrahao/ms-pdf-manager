@@ -1,8 +1,9 @@
 package br.com.alfa11.mspdfmanager.service;
 
-import br.com.alfa11.mspdfmanager.model.FileMetadata;
+import br.com.alfa11.mspdfmanager.model.*;
 import br.com.alfa11.mspdfmanager.util.DataUtil;
 import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Phrase;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import com.itextpdf.text.Document;
 
@@ -45,19 +47,19 @@ public class PdfService {
 
     public byte[] mergeUsingPDFBox(List<String> pdfFiles, String outputFile) {
         PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
-        pdfMergerUtility.setDestinationFileName("/uploads/" + outputFile);
+        pdfMergerUtility.setDestinationFileName(outputFile);
         log.info("Arquivo: " + outputFile);
 
         pdfFiles.forEach(file -> {
             try {
-                pdfMergerUtility.addSource(new File("/uploads/" + file));
+                pdfMergerUtility.addSource(new File(file));
                 log.info("Arquivo: " + file);
             } catch (FileNotFoundException e) {
                 log.error(e.getMessage());
             }
         });
 
-        File file = new File("/uploads/" + outputFile);
+        File file = new File(outputFile);
         byte[] content;
         try {
             pdfMergerUtility.mergeDocuments(MemoryUsageSetting.setupTempFileOnly().streamCache);
@@ -101,7 +103,8 @@ public class PdfService {
             PdfContentByte directContent = writer.getDirectContent();
             PdfImportedPage pdfImportedPage;
             for (String fileName : pdfFiles) {
-                pdfReader = new PdfReader("uploads/"+fileName);
+                log.info("Mergaando: "+fileName);
+                pdfReader = new PdfReader(fileName);
                 int currentPdfReaderPage = 1;
                 while (currentPdfReaderPage <= pdfReader.getNumberOfPages()) {
                     document.newPage();
@@ -119,13 +122,13 @@ public class PdfService {
             Files.delete(file.toPath());
             return content;
         } catch (DocumentException e) {
-            log.error(e.getMessage());
+            log.error("Erro no mergeUsingItext:"+e.getMessage());
             throw new RuntimeException(e);
         } catch (FileNotFoundException e) {
-            log.error(e.getMessage());
+            log.error("Erro no mergeUsingItext:"+e.getMessage());
             throw new RuntimeException(e);
         } catch (IOException e) {
-            log.error(e.getMessage());
+            log.error("Erro no mergeUsingItext:"+e.getMessage());
             throw new RuntimeException(e);
         }
 
@@ -146,10 +149,10 @@ public class PdfService {
             PdfReader reader = new PdfReader(src);
             Rectangle pagesize = reader.getPageSize(1);
             PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(dest));
-            AcroFields form = stamper.getAcroFields();
-            form.setField("Name", "Jennifer");
-            form.setField("Company", "iText's next customer");
-            form.setField("Country", "No Man's Land");
+//            AcroFields form = stamper.getAcroFields();
+//            form.setField("Name", "Jennifer");
+//            form.setField("Company", "iText's next customer");
+//            form.setField("Country", "No Man's Land");
             PdfPTable table = new PdfPTable(2);
             table.addCell("#");
             table.addCell("description");
@@ -196,6 +199,69 @@ public class PdfService {
         column.setCanvas(canvas);
         column.setSimpleColumn(rect);
         return column.go();
+    }
+
+
+    public byte[] mergeFiles(ComposedDocument composedDocument){
+        log.info("ComposedDocument: "+composedDocument.toString());
+        byte[] content = null;
+        String doc = "";
+        String src = "";
+        String dest = "";
+        List<String> filesToMerge = new ArrayList<>();
+        try{
+            for(FileDescription fd: composedDocument.getFiles()){
+                doc = objectStoreService.getDoc("docs-"+fd.getGrupo(),fd.getFileName());
+                if(doc==null){
+                    return null;
+                }
+                src = "uploads/"+doc;
+                dest = "uploads/to_merge_"+doc;
+                log.info("Origem : "+src);
+                log.info("Destino: "+dest);
+                PdfReader reader = new PdfReader(src);
+                Rectangle pagesize = reader.getPageSize(fd.getPageNumber());
+                PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(dest));
+                for(FileData fdd: fd.getFileData()){
+                    log.info("Tem Dados!");
+                    PdfPTable table = new PdfPTable(2);
+                    table.setWidths(new int[]{fdd.getKeySize(), fdd.getValueSize()});
+                    for (TableRow row: fdd.getRows()) {
+                        log.info("Tem row!");
+                        PdfPCell pdfPCellKey = new PdfPCell(new Phrase(row.getKeyCell()));
+                        pdfPCellKey.setBorder(0);
+                        table.addCell(pdfPCellKey);
+                        PdfPCell pdfPCellValue = new PdfPCell(new Phrase(row.getValueCell()));
+                        pdfPCellValue.setBorder(0);
+                        table.addCell(pdfPCellValue);
+//                        table.addCell(row.getKeyCell());
+//                        table.addCell(row.getValueCell());
+                    }
+                    ColumnText column = new ColumnText(stamper.getOverContent(fd.getPageNumber()));
+                    Rectangle rectPage1 = new Rectangle(fdd.getIix(), fdd.getIiy(), fdd.getUrx(), fdd.getUry());
+                    column.setSimpleColumn(rectPage1);
+                    column.addElement(table);
+                    column.go();
+
+                }
+                stamper.setFormFlattening(true);
+                stamper.close();
+                reader.close();
+                filesToMerge.add(dest);
+                File ff =  new File(src);
+                Files.delete(ff.toPath());
+
+            }
+            content = mergeUsingIText(filesToMerge, "result.pdf");
+            for(String fileName: filesToMerge){
+                File f =  new File(fileName);
+                Files.delete(f.toPath());
+            }
+
+        } catch (Exception e){
+            log.error("Erro no mergeFiles: "+e.getMessage());
+        }
+        return content;
     }
 
 }
