@@ -1,11 +1,19 @@
 package br.com.alfa11.mspdfmanager.service;
 
+import br.com.alfa11.mspdfmanager.exception.StoredFileNotFoundException;
 import br.com.alfa11.mspdfmanager.model.*;
 import br.com.alfa11.mspdfmanager.util.DataUtil;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.*;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.pdf.navigation.PdfExplicitDestination;
+import com.itextpdf.kernel.utils.PdfMerger;
+import com.itextpdf.layout.Canvas;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Text;
+import com.itextpdf.styledxmlparser.jsoup.nodes.Document;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
@@ -17,6 +25,8 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.awt.print.PageFormat;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,7 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import com.itextpdf.text.Document;
+
+import static com.itextpdf.io.font.constants.StandardFonts.TIMES_BOLD;
+import static com.itextpdf.io.font.constants.StandardFonts.TIMES_ROMAN;
 
 @Service
 @Slf4j
@@ -34,7 +46,7 @@ public class PdfService {
     @Autowired
     ObjectStoreService objectStoreService;
 
-    public FileMetadata getFileMetadata(MultipartFile file, String grupo, String url){
+    public FileMetadata getFileMetadata(MultipartFile file, String grupo, String url) {
 
 
         return FileMetadata.builder()
@@ -45,223 +57,170 @@ public class PdfService {
                 .build();
     }
 
-    public byte[] mergeUsingPDFBox(List<String> pdfFiles, String outputFile) {
-        PDFMergerUtility pdfMergerUtility = new PDFMergerUtility();
-        pdfMergerUtility.setDestinationFileName(outputFile);
-        log.info("Arquivo: " + outputFile);
 
-        pdfFiles.forEach(file -> {
-            try {
-                pdfMergerUtility.addSource(new File(file));
-                log.info("Arquivo: " + file);
-            } catch (FileNotFoundException e) {
-                log.error(e.getMessage());
-            }
-        });
+    protected byte[] mergePdfs(List<String> filesToMerge) throws IOException {
 
-        File file = new File(outputFile);
+        String dest = "uploads/merged_result.pdf";
+        File file = new File(dest);
+        PdfDocument pdfDoc = new PdfDocument(new PdfWriter(dest));
+        PdfDocument srcDoc = null;
+        int numberOfPages = 0;
+        PdfMerger merger = new PdfMerger(pdfDoc);
         byte[] content;
-        try {
-            pdfMergerUtility.mergeDocuments(MemoryUsageSetting.setupTempFileOnly().streamCache);
-            content = Files.readAllBytes(file.toPath());
-            return content;
-        } catch (IOException e) {
-            log.error(e.getMessage());
+
+        for (String f : filesToMerge) {
+            srcDoc = new PdfDocument(new PdfReader(f));
+            numberOfPages = srcDoc.getNumberOfPages();
+            merger.setCloseSourceDocuments(true)
+                    .merge(srcDoc, 1, numberOfPages);
         }
 
-        return null;
-    }
+        pdfDoc.close();
 
-    public static void createPDFDoc(String content, String filePath) throws IOException {
-        PDDocument document = new PDDocument();
-        for (int i = 0; i < 3; i++) {
-            PDPage page = new PDPage();
-            document.addPage(page);
-
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 14);
-                contentStream.showText(content + ", page:" + i);
-                contentStream.endText();
-            }
+        content = Files.readAllBytes(file.toPath());
+        Files.delete(file.toPath());
+        for (String fileName : filesToMerge) {
+            File f = new File(fileName);
+            Files.delete(f.toPath());
         }
-        document.save("uploads/" + filePath);
-        document.close();
+        return content;
     }
 
-    public byte[] mergeUsingIText(List<String> pdfFiles, String outputFile) {
-        outputFile = "uploads/" + outputFile;
-        List<PdfReader> pdfReaders = null;
-        Document document = new Document();
-        FileOutputStream fos = null;
-        PdfWriter writer = null;
-        PdfReader pdfReader = null;
-        try {
-            fos = new FileOutputStream(outputFile);
-            writer = PdfWriter.getInstance(document, fos);
-            document.open();
-            PdfContentByte directContent = writer.getDirectContent();
-            PdfImportedPage pdfImportedPage;
-            for (String fileName : pdfFiles) {
-                log.info("Mergaando: "+fileName);
-                pdfReader = new PdfReader(fileName);
-                int currentPdfReaderPage = 1;
-                while (currentPdfReaderPage <= pdfReader.getNumberOfPages()) {
-                    document.newPage();
-                    pdfImportedPage = writer.getImportedPage(pdfReader, currentPdfReaderPage);
-                    directContent.addTemplate(pdfImportedPage, 0, 0);
-                    currentPdfReaderPage++;
-                }
-            }
-            fos.flush();
-            document.close();
-            fos.close();
-            File file = new File(outputFile);
-            byte[] content;
-            content = Files.readAllBytes(file.toPath());
-            Files.delete(file.toPath());
-            return content;
-        } catch (DocumentException e) {
-            log.error("Erro no mergeUsingItext:"+e.getMessage());
-            throw new RuntimeException(e);
-        } catch (FileNotFoundException e) {
-            log.error("Erro no mergeUsingItext:"+e.getMessage());
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            log.error("Erro no mergeUsingItext:"+e.getMessage());
-            throw new RuntimeException(e);
+    protected FileMetadata mergeAndStorePdfs(List<String> filesToMerge,
+                                             String composedDocumentId,
+                                             String grupo) throws IOException {
+
+        String dest = "uploads/merged_result.pdf";
+        File file = new File(dest);
+        PdfDocument pdfDoc = new PdfDocument(new PdfWriter(dest));
+        PdfDocument srcDoc = null;
+        int numberOfPages = 0;
+        PdfMerger merger = new PdfMerger(pdfDoc);
+
+
+        for (String f : filesToMerge) {
+            srcDoc = new PdfDocument(new PdfReader(f));
+            numberOfPages = srcDoc.getNumberOfPages();
+            merger.setCloseSourceDocuments(true)
+                    .merge(srcDoc, 1, numberOfPages);
         }
 
-    }
+        pdfDoc.close();
 
-    public byte[] manipulatePdf(String bucketName, String src, String dest)  {
+        String dataHora = DataUtil.getSearchableDate();
 
-        String doc = objectStoreService.getDoc(bucketName,src);
-        if(doc==null){
-            return null;
+        String response = objectStoreService.storeFile("docs-"+grupo,
+                dest,"application/octet-stream",dataHora+"_"+composedDocumentId+".pdf");
+
+
+        Files.delete(file.toPath());
+        for (String fileName : filesToMerge) {
+            File f = new File(fileName);
+            Files.delete(f.toPath());
         }
-        src = "uploads/"+doc;
-        dest = "uploads/"+dest;
-        byte[] content = null;
-
-
-        try {
-            PdfReader reader = new PdfReader(src);
-            Rectangle pagesize = reader.getPageSize(1);
-            PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(dest));
-//            AcroFields form = stamper.getAcroFields();
-//            form.setField("Name", "Jennifer");
-//            form.setField("Company", "iText's next customer");
-//            form.setField("Country", "No Man's Land");
-            PdfPTable table = new PdfPTable(2);
-            table.addCell("#");
-            table.addCell("description");
-            table.setHeaderRows(1);
-            table.setWidths(new int[]{1, 15});
-            for (int i = 1; i <= 150; i++) {
-                table.addCell(String.valueOf(i));
-                table.addCell("test " + i);
-            }
-            ColumnText column = new ColumnText(stamper.getOverContent(1));
-            Rectangle rectPage1 = new Rectangle(36, 36, 559, 540);
-            column.setSimpleColumn(rectPage1);
-            column.addElement(table);
-            int pagecount = 1;
-            Rectangle rectPage2 = new Rectangle(36, 36, 559, 806);
-            int status = column.go();
-            while (ColumnText.hasMoreText(status)) {
-                status = triggerNewPage(stamper, pagesize, column, rectPage2, ++pagecount);
-            }
-            stamper.setFormFlattening(true);
-            stamper.close();
-            reader.close();
-            File file = new File(dest);
-            File file2 = new File(src);
-            content = Files.readAllBytes(file.toPath());
-            Files.delete(file.toPath());
-            Files.delete(file2.toPath());
-            return content;
-        } catch (DocumentException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
+        return FileMetadata.builder()
+                .dataExtracao(dataHora)
+                .nomePdf(dataHora+"_"+composedDocumentId+".pdf")
+                .grupo(grupo)
+                .url(response)
+                .build();
     }
 
-    public int triggerNewPage(PdfStamper stamper, Rectangle pagesize, ColumnText column, Rectangle rect, int pagecount) throws DocumentException {
-        stamper.insertPage(pagecount, pagesize);
-        PdfContentByte canvas = stamper.getOverContent(pagecount);
-        column.setCanvas(canvas);
-        column.setSimpleColumn(rect);
-        return column.go();
-    }
-
-
-    public byte[] mergeFiles(ComposedDocument composedDocument){
-        log.info("ComposedDocument: "+composedDocument.toString());
+    public byte[] stampContent(ComposedDocument composedDocument) throws IOException, StoredFileNotFoundException {
         byte[] content = null;
         String doc = "";
         String src = "";
         String dest = "";
         List<String> filesToMerge = new ArrayList<>();
-        try{
-            for(FileDescription fd: composedDocument.getFiles()){
-                doc = objectStoreService.getDoc("docs-"+fd.getGrupo(),fd.getFileName());
-                if(doc==null){
-                    return null;
-                }
-                src = "uploads/"+doc;
-                dest = "uploads/to_merge_"+doc;
-                log.info("Origem : "+src);
-                log.info("Destino: "+dest);
-                PdfReader reader = new PdfReader(src);
-                Rectangle pagesize = reader.getPageSize(fd.getPageNumber());
-                PdfStamper stamper = new PdfStamper(reader, new FileOutputStream(dest));
-                for(FileData fdd: fd.getFileData()){
-                    log.info("Tem Dados!");
-                    PdfPTable table = new PdfPTable(2);
-                    table.setWidths(new int[]{fdd.getKeySize(), fdd.getValueSize()});
-                    for (TableRow row: fdd.getRows()) {
-                        log.info("Tem row!");
-                        PdfPCell pdfPCellKey = new PdfPCell(new Phrase(row.getKeyCell()));
-                        pdfPCellKey.setBorder(0);
-                        table.addCell(pdfPCellKey);
-                        PdfPCell pdfPCellValue = new PdfPCell(new Phrase(row.getValueCell()));
-                        pdfPCellValue.setBorder(0);
-                        table.addCell(pdfPCellValue);
-//                        table.addCell(row.getKeyCell());
-//                        table.addCell(row.getValueCell());
-                    }
-                    ColumnText column = new ColumnText(stamper.getOverContent(fd.getPageNumber()));
-                    Rectangle rectPage1 = new Rectangle(fdd.getIix(), fdd.getIiy(), fdd.getUrx(), fdd.getUry());
-                    column.setSimpleColumn(rectPage1);
-                    column.addElement(table);
-                    column.go();
 
-                }
-                stamper.setFormFlattening(true);
-                stamper.close();
-                reader.close();
-                filesToMerge.add(dest);
-                File ff =  new File(src);
-                Files.delete(ff.toPath());
-
+        for (FileDescription fd : composedDocument.getFiles()) {
+            doc = objectStoreService.getDoc("docs-" + fd.getGrupo(), fd.getFileName());
+            if (doc == null) {
+                String error = "Arquivo não localizado no Bucket: " + fd.getGrupo() + " Nome: " + fd.getFileName();
+                log.error(error);
+                throw new StoredFileNotFoundException(error);
             }
-            content = mergeUsingIText(filesToMerge, "result.pdf");
-            for(String fileName: filesToMerge){
-                File f =  new File(fileName);
-                Files.delete(f.toPath());
-            }
+            src = "uploads/" + doc;
+            dest = "uploads/to_merge_" + doc;
 
-        } catch (Exception e){
-            log.error("Erro no mergeFiles: "+e.getMessage());
+            PdfDocument pdf = new PdfDocument(new PdfReader(src),new PdfWriter(dest));
+            PdfPage page = pdf.getPage(fd.getPageNumber());
+
+            for(FileData fdd: fd.getFileData()){
+                PdfCanvas pdfCanvas = new PdfCanvas(page);
+                Rectangle rectangle = new Rectangle(fdd.getIix(), fdd.getIiy(), fdd.getUrx(), fdd.getUry());
+                pdfCanvas.rectangle(rectangle);
+                if(fdd.isStroke()){
+                    pdfCanvas.stroke();
+                }
+                Canvas canvas = new Canvas(pdfCanvas, rectangle);
+                PdfFont font = PdfFontFactory.createFont(TIMES_ROMAN);
+                for(String pp: fdd.getParagraphs()){
+                    Text paragrafo = new Text(pp).setFont(font);
+                    Paragraph p = new Paragraph().add(paragrafo);
+                    canvas.add(p);
+                    canvas.close();
+                }
+            }
+            pdf.close();
+
+            filesToMerge.add(dest);
+            File ff = new File(src);
+            Files.delete(ff.toPath());
+
         }
+        content = mergePdfs(filesToMerge);
+
         return content;
     }
+
+    public FileMetadata stampAndStoreContent(ComposedDocument composedDocument) throws IOException, StoredFileNotFoundException {
+        FileMetadata content = null;
+        String doc = "";
+        String src = "";
+        String dest = "";
+        List<String> filesToMerge = new ArrayList<>();
+
+        for (FileDescription fd : composedDocument.getFiles()) {
+            doc = objectStoreService.getDoc("docs-" + fd.getGrupo(), fd.getFileName());
+            if (doc == null) {
+                String error = "Arquivo não localizado no Bucket: " + fd.getGrupo() + " Nome: " + fd.getFileName();
+                log.error(error);
+                throw new StoredFileNotFoundException(error);
+            }
+            src = "uploads/" + doc;
+            dest = "uploads/to_merge_" + doc;
+
+            PdfDocument pdf = new PdfDocument(new PdfReader(src),new PdfWriter(dest));
+            PdfPage page = pdf.getPage(fd.getPageNumber());
+
+            for(FileData fdd: fd.getFileData()){
+                PdfCanvas pdfCanvas = new PdfCanvas(page);
+                Rectangle rectangle = new Rectangle(fdd.getIix(), fdd.getIiy(), fdd.getUrx(), fdd.getUry());
+                pdfCanvas.rectangle(rectangle);
+                if(fdd.isStroke()){
+                    pdfCanvas.stroke();
+                }
+                Canvas canvas = new Canvas(pdfCanvas, rectangle);
+                PdfFont font = PdfFontFactory.createFont(TIMES_ROMAN);
+                for(String pp: fdd.getParagraphs()){
+                    Text paragrafo = new Text(pp).setFont(font);
+                    Paragraph p = new Paragraph().add(paragrafo);
+                    canvas.add(p);
+                    canvas.close();
+                }
+            }
+            pdf.close();
+
+            filesToMerge.add(dest);
+            File ff = new File(src);
+            Files.delete(ff.toPath());
+
+        }
+        content = mergeAndStorePdfs(filesToMerge,composedDocument.getComposedDocumentId(), composedDocument.getGrupo());
+
+        return content;
+    }
+
 
 }

@@ -52,21 +52,43 @@ public class PdfController {
     }
 
     @GetMapping("/merge")
-    @Operation(summary = "Mescla arquivos PDF",
-            description = "Permite que um ou mais arquivos PDF sejam concatenados")
+    @Operation(summary = "Mescla arquivos PDF - Retorna PDF",
+            description = "Permite que um ou mais arquivos PDF sejam concatenados e que informação seja incorporada em um documento específico.")
     public ResponseEntity<?> mergePDF(@RequestBody ComposedDocument composedDocument) {
 
-        byte[] contents = pdfService.mergeFiles(composedDocument);
-        log.info("Contents: "+contents.length);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        String filename = "result.pdf";
-        headers.setContentDispositionFormData(filename, filename);
-        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-        ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
-        return response;
+        byte[] contents = null;
+        try {
+            contents = pdfService.stampContent(composedDocument);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            String filename = "result.pdf";
+            headers.setContentDispositionFormData(filename, filename);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+            ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
+            return response;
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).build();
+        }
+
 
     }
+
+    @GetMapping("/merge/store")
+    @Operation(summary = "Mescla arquivos PDF - Retorna Storage URL",
+            description = "Permite que um ou mais arquivos PDF sejam concatenados e que informação seja incorporada em um documento específico.")
+    public ResponseEntity<?> mergeAndStorePDF(@RequestBody ComposedDocument composedDocument) {
+
+        FileMetadata contents = null;
+        try {
+            contents = pdfService.stampAndStoreContent(composedDocument);
+            return ResponseEntity.ok(contents);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).build();
+        }
+
+
+    }
+
 
     @GetMapping("/download/{grupo}/{file}")
     @Operation(summary = "Faz download de um arquivo PDF a partir do repositorio remoto",
@@ -78,26 +100,6 @@ public class PdfController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             String filename = "result.pdf";
-            headers.setContentDispositionFormData(filename, filename);
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-            ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);
-            return response;
-        }else{
-            return ResponseEntity.notFound().build();
-        }
-
-    }
-
-    @GetMapping("/stamp/{grupo}/{file}")
-    @Operation(summary = "Acrescenta campos com informações ao PDF",
-            description = "Permite que informações sejam adicionadas a um determinado PDF")
-    public ResponseEntity<?> stampPDF(@PathVariable String grupo, @PathVariable String file) {
-
-        byte[] contents = pdfService.manipulatePdf("docs-"+grupo,file,"edited.pdf");
-        if(contents != null){
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            String filename = "edited.pdf";
             headers.setContentDispositionFormData(filename, filename);
             headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
             ResponseEntity<byte[]> response = new ResponseEntity<>(contents, headers, HttpStatus.OK);

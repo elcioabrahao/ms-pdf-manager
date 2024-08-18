@@ -13,5 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class ComposedDocument implements Serializable {
-    List<FileDescription> files;
+    private String composedDocumentId;
+    private String grupo;
+    private List<FileDescription> files;
 }

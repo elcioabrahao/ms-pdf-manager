@@ -25,6 +25,12 @@ public class DataUtil {
         return data;
     }
 
+    public static String getSearchableDate(){
+        Date dataHoraAtual = new Date();
+        String data = new SimpleDateFormat("yyyyMMddhhmmss").format(dataHoraAtual);
+        return data;
+    }
+
     public static int getIdade(String dataNascimento) {
 
         String dateFormat = "dd/MM/uuuu";

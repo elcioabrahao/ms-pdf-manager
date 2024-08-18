@@ -9,10 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -124,6 +121,10 @@ public class ObjectStoreService {
     }
 
     public String getDoc(String bucketName, String objectName){
+
+        log.info("Bucket Name: "+bucketName);
+        log.info("Object Name: "+objectName);
+
         try {
             String destino = "edited_"+objectName;
             minioClient.downloadObject(
@@ -134,34 +135,84 @@ public class ObjectStoreService {
                             .build());
             return destino;
         } catch (ErrorResponseException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (InsufficientDataException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (InternalException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (InvalidKeyException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (InvalidResponseException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (IOException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (NoSuchAlgorithmException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (ServerException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         } catch (XmlParserException e) {
-            log.error(e.getLocalizedMessage());
+            log.error("GetObject: "+e.getLocalizedMessage());
             return null;
         }
     }
 
+
+    public String storeFile(String bucketName,
+                             String fileName,
+                             String contentType,
+                            String fileId) {
+
+        bucketName = bucketName.toLowerCase(Locale.ROOT);
+
+        log.info("Bucket:"+bucketName+"<--");
+        log.info("File  :"+fileName+"<--");
+        log.info("Tipo  :"+contentType+"<--");
+
+        File file = new File (fileName);
+
+        String response = "";
+
+        try {
+            InputStream inputStream =  new FileInputStream(file);
+            boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            if (!found) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            }
+            minioClient.putObject(
+                    PutObjectArgs.builder().bucket(bucketName).object(fileId).stream(
+                                    inputStream, inputStream.available(), -1)
+                            .contentType(contentType)
+                            .build());
+
+            StatObjectResponse statObj = minioClient.statObject(StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileId)
+                    .build());
+
+            String name = statObj.userMetadata().get("file-name");
+            String contentDisposition = URLEncoder.encode("attachment; filename=\"%s\"".formatted(name), StandardCharsets.UTF_8);
+
+            response = minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileId)
+                    .extraQueryParams(Map.of("response-content-disposition", contentDisposition))
+                    .expiry(1, TimeUnit.HOURS)
+                    .method(Method.GET)
+                    .build());
+
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+        }
+
+        return response;
+    }
 
 }

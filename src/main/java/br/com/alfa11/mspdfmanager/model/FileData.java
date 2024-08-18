@@ -18,7 +18,6 @@ public class FileData implements Serializable {
     private int iiy;
     private int urx;
     private int ury;
-    private int keySize;
-    private int valueSize;
-    private List<TableRow> rows;
+    private boolean stroke = false;
+    private List<String> paragraphs;
 }
