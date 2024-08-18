@@ -1,9 +1,7 @@
 package br.com.alfa11.mspdfmanager.controller;
 
-
 import br.com.alfa11.mspdfmanager.model.ComposedDocument;
 import br.com.alfa11.mspdfmanager.model.FileMetadata;
-import br.com.alfa11.mspdfmanager.model.MergeFiles;
 import br.com.alfa11.mspdfmanager.service.ObjectStoreService;
 import br.com.alfa11.mspdfmanager.service.PdfService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,12 +14,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j

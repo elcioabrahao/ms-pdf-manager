@@ -4,11 +4,9 @@ import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.asn1.bc.ObjectStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -32,12 +30,6 @@ public class ObjectStoreService {
                            String contentType) {
 
         bucketName = bucketName.toLowerCase(Locale.ROOT);
-
-        log.info("Bucket:"+bucketName+"<--");
-        log.info("Nome  :"+objectName+"<--");
-        log.info("File  :"+file.getOriginalFilename()+"<--");
-        log.info("Tipo  :"+contentType+"<--");
-
         String response = "";
 
         try {
@@ -71,8 +63,6 @@ public class ObjectStoreService {
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
         }
-
-        log.info("Response:"+response);
 
         return response;
     }
@@ -122,9 +112,6 @@ public class ObjectStoreService {
 
     public String getDoc(String bucketName, String objectName){
 
-        log.info("Bucket Name: "+bucketName);
-        log.info("Object Name: "+objectName);
-
         try {
             String destino = "edited_"+objectName;
             minioClient.downloadObject(
@@ -164,17 +151,12 @@ public class ObjectStoreService {
         }
     }
 
-
     public String storeFile(String bucketName,
                              String fileName,
                              String contentType,
                             String fileId) {
 
         bucketName = bucketName.toLowerCase(Locale.ROOT);
-
-        log.info("Bucket:"+bucketName+"<--");
-        log.info("File  :"+fileName+"<--");
-        log.info("Tipo  :"+contentType+"<--");
 
         File file = new File (fileName);
 
