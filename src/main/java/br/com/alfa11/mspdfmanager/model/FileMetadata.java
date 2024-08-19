@@ -1,5 +1,6 @@
 package br.com.alfa11.mspdfmanager.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,12 +13,12 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Builder
 public class FileMetadata implements Serializable {
-    @NotBlank(message = "Nome do arquivo PDF que foi armazenado no storage.")
+    @Schema(name="nomePdf", description = "Nome do arquivo PDF que foi armazenado no storage.", example = "prancha01.pdf", required = true)
     private String nomePdf;
-    @NotBlank(message = "Agrupamento onde foi colocado o arquivo - corresponde ao bucket.")
+    @Schema(name="grupo", description = "Agrupamento onde foi colocado o arquivo - corresponde ao bucket.", example = "pranchas", required = true)
     private String grupo;
-    @NotBlank(message = "Data em que o arquivo foi armazenado no storage.")
+    @Schema(name="dataExtracao", description = "Data em que o arquivo foi armazenado no storage.", example = "01/01/2024 07:00:00", required = true)
     private String dataExtracao;
-    @NotBlank(message = "URL que permite que o arquivo seja acessado diretamento no serviço do storage.")
+    @Schema(name="url", description = "URL que permite que o arquivo seja acessado diretamento no serviço do storage.", example = "https://servicoS3.com/bucket/arquivo.pdf", required = true)
     private String url;
 }
