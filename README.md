@@ -74,7 +74,7 @@ Request (JSON):
           "stroke": false,
           "paragraphs": [
             "Empresa: Alfa11 Consultoria e Serviços Ltda",
-            "CNPJ: 43.106.771/0001-70"
+            "CNPJ: XX.XXX.XXX/0001-XX"
           ]
         },
         {
@@ -132,7 +132,7 @@ Request (JSON):
           "stroke": false,
           "paragraphs": [
             "Empresa: Alfa11 Consultoria e Serviços Ltda",
-            "CNPJ: 43.106.771/0001-70"
+            "CNPJ: XX.XXX.XXX/0001-XX"
           ]
         },
         {
