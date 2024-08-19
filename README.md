@@ -15,7 +15,7 @@ Está é uma implementação de referência para um geranciador de arquivos PDF 
 - Inserir informações customizadas em qualquer página de quaisquer dos arquivos que estão sendo mergeados.
 - Permitir que o usuário informe as coordenadas da caixa (canva) onde os dados serão inseridos.
 - Permitir que sejam colocadas quantas linhas de texto forem necessárias em cada canva (não há controle de limites);
-- Permitir que seja exibida a borda da caixa (recoemndado somente para desenvolvimento dos doscumentos).
+- Permitir que seja exibida a borda da caixa (recomendado somente para desenvolvimento dos doscumentos).
 
 
 
