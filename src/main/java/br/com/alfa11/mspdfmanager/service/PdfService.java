@@ -97,7 +97,7 @@ public class PdfService {
                 dest,"application/octet-stream",dataHora+"_"+composedDocumentId+".pdf");
 
 
-        Files.delete(file.toPath());
+        //Files.delete(file.toPath());
         for (String fileName : filesToMerge) {
             File f = new File(fileName);
             Files.delete(f.toPath());
@@ -165,7 +165,12 @@ public class PdfService {
         String dest = "";
         List<String> filesToMerge = new ArrayList<>();
 
+
+
         for (FileDescription fd : composedDocument.getFiles()) {
+            log.info("INFOS: Grupo: "+fd.getGrupo());
+            log.info("INFOS: Nome : "+fd.getFileName());
+
             doc = objectStoreService.getDoc("docs-" + fd.getGrupo(), fd.getFileName());
             if (doc == null) {
                 String error = "Arquivo não localizado no Bucket: " + fd.getGrupo() + " Nome: " + fd.getFileName();

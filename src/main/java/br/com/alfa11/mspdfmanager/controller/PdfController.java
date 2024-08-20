@@ -78,6 +78,7 @@ public class PdfController {
             contents = pdfService.stampAndStoreContent(composedDocument);
             return ResponseEntity.ok(contents);
         } catch (IOException e) {
+            log.error(e.getLocalizedMessage());
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).build();
         }
 

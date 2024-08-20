@@ -112,8 +112,12 @@ public class ObjectStoreService {
 
     public String getDoc(String bucketName, String objectName){
 
+
+
         try {
             String destino = "edited_"+objectName;
+            log.info("INFOS2: Grupo: "+bucketName);
+            log.info("INFOS2: Nome : "+objectName);
             minioClient.downloadObject(
                     DownloadObjectArgs.builder()
                             .bucket(bucketName)
@@ -122,31 +126,31 @@ public class ObjectStoreService {
                             .build());
             return destino;
         } catch (ErrorResponseException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject1: "+e.getLocalizedMessage());
             return null;
         } catch (InsufficientDataException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject2: "+e.getLocalizedMessage());
             return null;
         } catch (InternalException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject3: "+e.getLocalizedMessage());
             return null;
         } catch (InvalidKeyException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject4: "+e.getLocalizedMessage());
             return null;
         } catch (InvalidResponseException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject5: "+e.getLocalizedMessage());
             return null;
         } catch (IOException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject6: "+e.getLocalizedMessage());
             return null;
         } catch (NoSuchAlgorithmException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject7: "+e.getLocalizedMessage());
             return null;
         } catch (ServerException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject8: "+e.getLocalizedMessage());
             return null;
         } catch (XmlParserException e) {
-            log.error("GetObject: "+e.getLocalizedMessage());
+            log.error("GetObject9: "+e.getLocalizedMessage());
             return null;
         }
     }
