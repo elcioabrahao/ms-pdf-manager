@@ -37,7 +37,7 @@ public class UploadController {
 
     public static String UPLOAD_DIRECTORY = System.getProperty("user.dir") + "/uploads";
 
-    @GetMapping("/v1/pdf")
+    @GetMapping("/")
     public String displayIndexForm() {
         return "index";
     }
