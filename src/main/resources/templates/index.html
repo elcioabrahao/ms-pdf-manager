@@ -10,16 +10,21 @@
             <div class="col-md-8 mx-auto">
                 <h2>MS-PAF-MANAGER - Interface para upload de PDFs</h2>
                 <p th:text="${message}" th:if="${message ne null}" class="alert alert-primary"></p>
-                <form method="post" th:action="@{/upload}" enctype="multipart/form-data">
+                <form method="post" th:action="@{/download}" enctype="multipart/form-data">
                     <div class="form-group">
-                        <input type="file" name="pdf" accept="application/pdf" class="form-control-file">
+                        Arquivo: <input type="text" name="arquivo" class="form-control-text" value="proposta.pdf">
                     </div>
                     <div class="form-group">
-                        Grupo: <input type="text" name="grupo" class="form-control-text">
+                        Valor: <input type="text" name="valor" class="form-control-text">
                     </div>
-                    <button type="submit" class="btn btn-primary">Upload PDFs</button>
+                    <button type="submit" class="btn btn-primary">Gerar Proposta</button>
                 </form>
                 <span th:if="${msg != null}" th:text="${msg}"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <a href="/v1/upload">Clique aqui para Upload de nova Proposta</a>
             </div>
         </div>
     </div>
